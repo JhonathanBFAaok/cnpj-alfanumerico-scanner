@@ -1,0 +1,20 @@
+# Nunca versionar
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Relatorios gerados (podem conter caminhos de cliente)
+relatorio*.html
+relatorio*.json
+*-achados.json
+!exemplo-achados.json
+
+# Seguranca: nada comercial entra aqui.
+# A lista de leads, a abordagem e a precificacao ficam em ../comercial-cnpj/
+*.csv
+!exemplo-*.csv
+ABORDAGEM.md
+leads*.csv
+priorizar.py
+comercial/

@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diagnostico CNPJ Alfanumerico</title><style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181d;--mu:#5b6672;--bd:#e3e7ec;
+--c3:#c0392b;--c2:#d98218;--c1:#4a7fb5;}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14181d;--card:#1d2228;
+--tx:#eef1f4;--mu:#9aa5b1;--bd:#2c333b;--c3:#e8695a;--c2:#e8a94f;--c1:#7aa9d9;}}
+*{box-sizing:border-box}body{margin:0;padding:32px 16px;background:var(--bg);color:var(--tx);
+font:15px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.w{max-width:960px;margin:0 auto}h1{font-size:26px;margin:0 0 4px}
+.sub{color:var(--mu);margin:0 0 28px;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px}
+.kpi b{display:block;font-size:30px;line-height:1.1}
+.kpi span{color:var(--mu);font-size:13px}
+.s3 b{color:var(--c3)}.s2 b{color:var(--c2)}.s1 b{color:var(--c1)}
+.g{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.g h2{font-size:17px;margin:0 0 6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:5px;color:#fff}
+.t3{background:var(--c3)}.t2{background:var(--c2)}.t1{background:var(--c1)}
+.why{color:var(--mu);font-size:14px;margin:8px 0}
+.fix{border-left:3px solid var(--c1);padding:8px 12px;margin:12px 0 4px;font-size:14px;background:rgba(122,169,217,.09)}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+td{padding:7px 8px;border-top:1px solid var(--bd);vertical-align:top}
+td.loc{white-space:nowrap;color:var(--mu);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
+.ok{text-align:center;padding:48px 20px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-height:1.7}
+</style></head><body><div class="w">
+<h1>Diagn&oacute;stico de compatibilidade &mdash; CNPJ alfanum&eacute;rico</h1>
+<p class="sub">ERP Exemplo Ltda &middot; 7 arquivos analisados &middot; 18/09/2026 03:42</p>
+<div class="kpis">
+<div class="kpi s3"><b>14</b><span>cr&iacute;ticos</span></div>
+<div class="kpi s2"><b>4</b><span>altos</span></div>
+<div class="kpi s1"><b>2</b><span>para revisar</span></div>
+<div class="kpi"><b>20</b><span>pontos no total</span></div>
+</div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Conversão do CNPJ para número <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 4 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.</p>
+<div class="fix"><b>Como corrigir:</b> Tratar CNPJ sempre como texto (string). Nunca converter para número.</div>
+<table>
+<tr><td class="loc">src/Cadastro.cs:6</td><td><code>var doc = Convert.ToInt64(cnpj);</code></td></tr>
+<tr><td class="loc">src/cliente.php:8</td><td><code>$cnpjNumero = intval($cnpj);</code></td></tr>
+<tr><td class="loc">src/cliente.php:15</td><td><code>$soma += intval($cnpj[$i]) * $this-&gt;pesos[$i];</code></td></tr>
+<tr><td class="loc">src/form.js:8</td><td><code>soma += parseInt(limpo.charAt(i)) * pesos[i];</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Coluna de CNPJ com tipo numérico no banco <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 3 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, ou o valor é gravado errado.</p>
+<div class="fix"><b>Como corrigir:</b> Migrar a coluna para CHAR(14) ou VARCHAR(14). Atenção ao índice e às FKs que dependem dela.</div>
+<table>
+<tr><td class="loc">db/schema.sql:4</td><td><code>cnpj     BIGINT NOT NULL UNIQUE,</code></td></tr>
+<tr><td class="loc">db/schema.sql:5</td><td><code>cgc_raiz NUMERIC(8) NULL,</code></td></tr>
+<tr><td class="loc">src/Cadastro.cs:2</td><td><code>public long Cnpj { get; set; }</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Limpeza com \D apaga as letras do CNPJ <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 3 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">O \D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar por remocao apenas dos separadores: replace(/[.\/-]/g, &#x27;&#x27;).toUpperCase()</div>
+<table>
+<tr><td class="loc">src/Cadastro.cs:4</td><td><code>cnpj = Regex.Replace(cnpj, @&quot;\D&quot;, &quot;&quot;);</code></td></tr>
+<tr><td class="loc">src/cliente.php:4</td><td><code>$cnpj = preg_replace(&#x27;/\D/&#x27;, &#x27;&#x27;, $dados[&#x27;cnpj&#x27;]);</code></td></tr>
+<tr><td class="loc">src/form.js:1</td><td><code>const limparCnpj = (v) =&gt; v.replace(/\D/g, &#x27;&#x27;);</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Validação que exige 14 dígitos numéricos <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">A expressão aceita apenas dígitos. Um CNPJ com letra é rejeitado como inválido logo na entrada, e o cliente não consegue nem se cadastrar.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar para [0-9A-Z]{12}[0-9]{2} (12 alfanuméricos + 2 dígitos verificadores).</div>
+<table>
+<tr><td class="loc">src/cliente.php:12</td><td><code>if (!preg_match(&#x27;/^\d{14}$/&#x27;, $cnpj)) return false;</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Chave de acesso tratada como 44 dígitos numéricos <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">A chave de acesso de 44 posições também mudou: agora é [0-9]{6}[A-Z0-9]{12}[0-9]{26}, porque carrega o CNPJ do emitente no meio. Quem valida a chave com \d{44} rejeita nota válida de emitente alfanumérico. Este ponto passa despercebido com muito mais frequência que o campo do CNPJ.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar a validação para [0-9]{6}[A-Z0-9]{12}[0-9]{26} e garantir que a chave seja tratada como texto em todo o caminho (banco, índice, ordenação).</div>
+<table>
+<tr><td class="loc">src/Fiscal.pas:8</td><td><code>Result := TRegEx.IsMatch(AChave, &#x27;^\d{44}$&#x27;);</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Função de &quot;só números&quot; aplicada ao CNPJ ou à chave <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Este é exatamente o bug que o próprio Projeto ACBr teve: o OnlyNumber apagava as letras antes de gravar o XML, e o StrToInt64Def transformava o CNPJ em 0. Foram corrigidos em jun e jul/2026. Se o seu código chama essas funções sobre CNPJ ou chave, tem o mesmo defeito.</p>
+<div class="fix"><b>Como corrigir:</b> Usar uma função que remova apenas os separadores [./-] e preserve as letras, mantendo o valor como texto.</div>
+<table>
+<tr><td class="loc">src/Fiscal.pas:14</td><td><code>Result := StrToInt64Def(OnlyNumber(ACNPJ), 0);</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Limpeza com [^0-9] apaga as letras do CNPJ <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Mesmo efeito do \D: qualquer caractere que nao seja digito e removido, inclusive as letras que agora fazem parte do CNPJ.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar a classe por [^0-9A-Za-z] ou remover apenas os separadores [./-]</div>
+<table>
+<tr><td class="loc">src/form.js:4</td><td><code>const limpo = cnpj.replace(/[^0-9]/g, &#x27;&#x27;);</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t2">ALTO</span> Checagem de &quot;é só número?&quot; aplicada ao CNPJ <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 2 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Esse teste retorna falso para CNPJ alfanumérico válido, e o código trata como dado inválido.</p>
+<div class="fix"><b>Como corrigir:</b> Validar com a regra nova: 12 caracteres [0-9A-Z] + 2 dígitos, e conferir o DV.</div>
+<table>
+<tr><td class="loc">src/Cadastro.cs:5</td><td><code>if (!long.TryParse(cnpj, out long numero)) return false;</code></td></tr>
+<tr><td class="loc">src/cliente.php:5</td><td><code>if (!is_numeric($cnpj)) {</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t2">ALTO</span> Campo de formulário configurado como numérico <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">O navegador bloqueia letras no campo. O usuário simplesmente não consegue digitar o CNPJ.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar para type=&quot;text&quot; e inputmode=&quot;text&quot;.</div>
+<table>
+<tr><td class="loc">src/cadastro.html:3</td><td><code>&lt;input id=&quot;cnpj&quot; name=&quot;cnpj&quot; type=&quot;number&quot; inputmode=&quot;numeric&quot; maxlength=&quot;14&quot;&gt;</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t2">ALTO</span> Máscara de formulário que só aceita número <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Máscaras com 9, 0 ou # normalmente restringem a digitação a números. O usuário com CNPJ alfanumérico não consegue digitar as letras.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar o coringa para o que aceita alfanumérico na sua biblioteca (ex.: &quot;AA.AAA.AAA/AAAA-00&quot; no jQuery Mask, &quot;SS.SSS.SSS/SSSS-00&quot; no IMask).</div>
+<table>
+<tr><td class="loc">src/form.js:2</td><td><code>const mascaraCnpj = &#x27;99.999.999/9999-99&#x27;;</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t1">MEDIO</span> Coluna de CNPJ menor que 14 caracteres <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Se a coluna guardava o CNPJ sem formatação em menos de 14 posições, o valor será truncado.</p>
+<div class="fix"><b>Como corrigir:</b> Ajustar para CHAR(14) sem formatação, ou VARCHAR(18) se guardar formatado.</div>
+<table>
+<tr><td class="loc">db/schema.sql:6</td><td><code>cnpj_fmt VARCHAR(11)</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t1">MEDIO</span> Código de barras CODE-128C no DANFE <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">O CODE-128C só codifica dígitos. Com chave de acesso alfanumérica ele não representa a chave. A nota técnica define um esquema híbrido 128A/128C.</p>
+<div class="fix"><b>Como corrigir:</b> Ajustar a geração do código de barras do DANFE/DACTE conforme a NT 2026.004.</div>
+<table>
+<tr><td class="loc">src/Fiscal.pas:19</td><td><code>ACBrBarras.TipoCodigo := bcCode128C;   // chave de acesso no DANFE</code></td></tr>
+</table></div>
+<footer>An&aacute;lise est&aacute;tica local &mdash; nenhum c&oacute;digo foi enviado para fora desta m&aacute;quina.<br>Base: Instru&ccedil;&atilde;o Normativa RFB n&ordm; 2.229. Primeiro CNPJ alfanum&eacute;rico emitido em 31/07/2026.<br>O resultado indica pontos prov&aacute;veis de quebra e n&atilde;o substitui revis&atilde;o t&eacute;cnica.</footer>
+</div></body></html>

@@ -1,0 +1,222 @@
+[
+  {
+    "arquivo": "db/schema.sql",
+    "linha": 4,
+    "codigo": "cnpj     BIGINT NOT NULL UNIQUE,",
+    "regra_id": "COLUNA_NUMERICA",
+    "sev": 3,
+    "titulo": "Coluna de CNPJ com tipo numérico no banco",
+    "porque": "Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, ou o valor é gravado errado.",
+    "correcao": "Migrar a coluna para CHAR(14) ou VARCHAR(14). Atenção ao índice e às FKs que dependem dela.",
+    "linguagem": "SQL"
+  },
+  {
+    "arquivo": "db/schema.sql",
+    "linha": 5,
+    "codigo": "cgc_raiz NUMERIC(8) NULL,",
+    "regra_id": "COLUNA_NUMERICA",
+    "sev": 3,
+    "titulo": "Coluna de CNPJ com tipo numérico no banco",
+    "porque": "Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, ou o valor é gravado errado.",
+    "correcao": "Migrar a coluna para CHAR(14) ou VARCHAR(14). Atenção ao índice e às FKs que dependem dela.",
+    "linguagem": "SQL"
+  },
+  {
+    "arquivo": "db/schema.sql",
+    "linha": 6,
+    "codigo": "cnpj_fmt VARCHAR(11)",
+    "regra_id": "COLUNA_CURTA",
+    "sev": 1,
+    "titulo": "Coluna de CNPJ menor que 14 caracteres",
+    "porque": "Se a coluna guardava o CNPJ sem formatação em menos de 14 posições, o valor será truncado.",
+    "correcao": "Ajustar para CHAR(14) sem formatação, ou VARCHAR(18) se guardar formatado.",
+    "linguagem": "SQL"
+  },
+  {
+    "arquivo": "src/Cadastro.cs",
+    "linha": 2,
+    "codigo": "public long Cnpj { get; set; }",
+    "regra_id": "COLUNA_NUMERICA",
+    "sev": 3,
+    "titulo": "Coluna de CNPJ com tipo numérico no banco",
+    "porque": "Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, ou o valor é gravado errado.",
+    "correcao": "Migrar a coluna para CHAR(14) ou VARCHAR(14). Atenção ao índice e às FKs que dependem dela.",
+    "linguagem": "C#"
+  },
+  {
+    "arquivo": "src/Cadastro.cs",
+    "linha": 4,
+    "codigo": "cnpj = Regex.Replace(cnpj, @\"\\D\", \"\");",
+    "regra_id": "STRIP_NAO_DIGITO",
+    "sev": 3,
+    "titulo": "Limpeza com \\D apaga as letras do CNPJ",
+    "porque": "O \\D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.",
+    "correcao": "Trocar por remocao apenas dos separadores: replace(/[.\\/-]/g, '').toUpperCase()",
+    "linguagem": "C#"
+  },
+  {
+    "arquivo": "src/Cadastro.cs",
+    "linha": 5,
+    "codigo": "if (!long.TryParse(cnpj, out long numero)) return false;",
+    "regra_id": "TESTE_SO_DIGITO",
+    "sev": 2,
+    "titulo": "Checagem de \"é só número?\" aplicada ao CNPJ",
+    "porque": "Esse teste retorna falso para CNPJ alfanumérico válido, e o código trata como dado inválido.",
+    "correcao": "Validar com a regra nova: 12 caracteres [0-9A-Z] + 2 dígitos, e conferir o DV.",
+    "linguagem": "C#"
+  },
+  {
+    "arquivo": "src/Cadastro.cs",
+    "linha": 6,
+    "codigo": "var doc = Convert.ToInt64(cnpj);",
+    "regra_id": "PARSE_INTEIRO",
+    "sev": 3,
+    "titulo": "Conversão do CNPJ para número",
+    "porque": "CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.",
+    "correcao": "Tratar CNPJ sempre como texto (string). Nunca converter para número.",
+    "linguagem": "C#"
+  },
+  {
+    "arquivo": "src/cadastro.html",
+    "linha": 3,
+    "codigo": "<input id=\"cnpj\" name=\"cnpj\" type=\"number\" inputmode=\"numeric\" maxlength=\"14\">",
+    "regra_id": "INPUT_NUMBER",
+    "sev": 2,
+    "titulo": "Campo de formulário configurado como numérico",
+    "porque": "O navegador bloqueia letras no campo. O usuário simplesmente não consegue digitar o CNPJ.",
+    "correcao": "Trocar para type=\"text\" e inputmode=\"text\".",
+    "linguagem": "HTML"
+  },
+  {
+    "arquivo": "src/cliente.php",
+    "linha": 4,
+    "codigo": "$cnpj = preg_replace('/\\D/', '', $dados['cnpj']);",
+    "regra_id": "STRIP_NAO_DIGITO",
+    "sev": 3,
+    "titulo": "Limpeza com \\D apaga as letras do CNPJ",
+    "porque": "O \\D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.",
+    "correcao": "Trocar por remocao apenas dos separadores: replace(/[.\\/-]/g, '').toUpperCase()",
+    "linguagem": "PHP"
+  },
+  {
+    "arquivo": "src/cliente.php",
+    "linha": 5,
+    "codigo": "if (!is_numeric($cnpj)) {",
+    "regra_id": "TESTE_SO_DIGITO",
+    "sev": 2,
+    "titulo": "Checagem de \"é só número?\" aplicada ao CNPJ",
+    "porque": "Esse teste retorna falso para CNPJ alfanumérico válido, e o código trata como dado inválido.",
+    "correcao": "Validar com a regra nova: 12 caracteres [0-9A-Z] + 2 dígitos, e conferir o DV.",
+    "linguagem": "PHP"
+  },
+  {
+    "arquivo": "src/cliente.php",
+    "linha": 8,
+    "codigo": "$cnpjNumero = intval($cnpj);",
+    "regra_id": "PARSE_INTEIRO",
+    "sev": 3,
+    "titulo": "Conversão do CNPJ para número",
+    "porque": "CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.",
+    "correcao": "Tratar CNPJ sempre como texto (string). Nunca converter para número.",
+    "linguagem": "PHP"
+  },
+  {
+    "arquivo": "src/cliente.php",
+    "linha": 12,
+    "codigo": "if (!preg_match('/^\\d{14}$/', $cnpj)) return false;",
+    "regra_id": "REGEX_14_DIGITOS",
+    "sev": 3,
+    "titulo": "Validação que exige 14 dígitos numéricos",
+    "porque": "A expressão aceita apenas dígitos. Um CNPJ com letra é rejeitado como inválido logo na entrada, e o cliente não consegue nem se cadastrar.",
+    "correcao": "Trocar para [0-9A-Z]{12}[0-9]{2} (12 alfanuméricos + 2 dígitos verificadores).",
+    "linguagem": "PHP"
+  },
+  {
+    "arquivo": "src/cliente.php",
+    "linha": 15,
+    "codigo": "$soma += intval($cnpj[$i]) * $this->pesos[$i];",
+    "regra_id": "PARSE_INTEIRO",
+    "sev": 3,
+    "titulo": "Conversão do CNPJ para número",
+    "porque": "CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.",
+    "correcao": "Tratar CNPJ sempre como texto (string). Nunca converter para número.",
+    "linguagem": "PHP"
+  },
+  {
+    "arquivo": "src/Fiscal.pas",
+    "linha": 8,
+    "codigo": "Result := TRegEx.IsMatch(AChave, '^\\d{44}$');",
+    "regra_id": "CHAVE_44_DIGITOS",
+    "sev": 3,
+    "titulo": "Chave de acesso tratada como 44 dígitos numéricos",
+    "porque": "A chave de acesso de 44 posições também mudou: agora é [0-9]{6}[A-Z0-9]{12}[0-9]{26}, porque carrega o CNPJ do emitente no meio. Quem valida a chave com \\d{44} rejeita nota válida de emitente alfanumérico. Este ponto passa despercebido com muito mais frequência que o campo do CNPJ.",
+    "correcao": "Trocar a validação para [0-9]{6}[A-Z0-9]{12}[0-9]{26} e garantir que a chave seja tratada como texto em todo o caminho (banco, índice, ordenação).",
+    "linguagem": "Delphi/Pascal"
+  },
+  {
+    "arquivo": "src/Fiscal.pas",
+    "linha": 14,
+    "codigo": "Result := StrToInt64Def(OnlyNumber(ACNPJ), 0);",
+    "regra_id": "ONLYNUMBER_ACBR",
+    "sev": 3,
+    "titulo": "Função de \"só números\" aplicada ao CNPJ ou à chave",
+    "porque": "Este é exatamente o bug que o próprio Projeto ACBr teve: o OnlyNumber apagava as letras antes de gravar o XML, e o StrToInt64Def transformava o CNPJ em 0. Foram corrigidos em jun e jul/2026. Se o seu código chama essas funções sobre CNPJ ou chave, tem o mesmo defeito.",
+    "correcao": "Usar uma função que remova apenas os separadores [./-] e preserve as letras, mantendo o valor como texto.",
+    "linguagem": "Delphi/Pascal"
+  },
+  {
+    "arquivo": "src/Fiscal.pas",
+    "linha": 19,
+    "codigo": "ACBrBarras.TipoCodigo := bcCode128C;   // chave de acesso no DANFE",
+    "regra_id": "CODE128C",
+    "sev": 1,
+    "titulo": "Código de barras CODE-128C no DANFE",
+    "porque": "O CODE-128C só codifica dígitos. Com chave de acesso alfanumérica ele não representa a chave. A nota técnica define um esquema híbrido 128A/128C.",
+    "correcao": "Ajustar a geração do código de barras do DANFE/DACTE conforme a NT 2026.004.",
+    "linguagem": "Delphi/Pascal"
+  },
+  {
+    "arquivo": "src/form.js",
+    "linha": 1,
+    "codigo": "const limparCnpj = (v) => v.replace(/\\D/g, '');",
+    "regra_id": "STRIP_NAO_DIGITO",
+    "sev": 3,
+    "titulo": "Limpeza com \\D apaga as letras do CNPJ",
+    "porque": "O \\D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.",
+    "correcao": "Trocar por remocao apenas dos separadores: replace(/[.\\/-]/g, '').toUpperCase()",
+    "linguagem": "JavaScript"
+  },
+  {
+    "arquivo": "src/form.js",
+    "linha": 2,
+    "codigo": "const mascaraCnpj = '99.999.999/9999-99';",
+    "regra_id": "MASCARA_NUMERICA",
+    "sev": 2,
+    "titulo": "Máscara de formulário que só aceita número",
+    "porque": "Máscaras com 9, 0 ou # normalmente restringem a digitação a números. O usuário com CNPJ alfanumérico não consegue digitar as letras.",
+    "correcao": "Trocar o coringa para o que aceita alfanumérico na sua biblioteca (ex.: \"AA.AAA.AAA/AAAA-00\" no jQuery Mask, \"SS.SSS.SSS/SSSS-00\" no IMask).",
+    "linguagem": "JavaScript"
+  },
+  {
+    "arquivo": "src/form.js",
+    "linha": 4,
+    "codigo": "const limpo = cnpj.replace(/[^0-9]/g, '');",
+    "regra_id": "STRIP_CLASSE_09",
+    "sev": 3,
+    "titulo": "Limpeza com [^0-9] apaga as letras do CNPJ",
+    "porque": "Mesmo efeito do \\D: qualquer caractere que nao seja digito e removido, inclusive as letras que agora fazem parte do CNPJ.",
+    "correcao": "Trocar a classe por [^0-9A-Za-z] ou remover apenas os separadores [./-]",
+    "linguagem": "JavaScript"
+  },
+  {
+    "arquivo": "src/form.js",
+    "linha": 8,
+    "codigo": "soma += parseInt(limpo.charAt(i)) * pesos[i];",
+    "regra_id": "PARSE_INTEIRO",
+    "sev": 3,
+    "titulo": "Conversão do CNPJ para número",
+    "porque": "CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.",
+    "correcao": "Tratar CNPJ sempre como texto (string). Nunca converter para número.",
+    "linguagem": "JavaScript"
+  }
+]
