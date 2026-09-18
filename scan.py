@@ -192,6 +192,18 @@ td.loc{white-space:nowrap;color:var(--mu);font-family:ui-monospace,Menlo,Consola
 code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
 .ok{text-align:center;padding:48px 20px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
 footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-height:1.7}
+@media print{
+  :root{--bg:#fff;--card:#fff;--tx:#000;--mu:#444;--bd:#bbb;
+        --c3:#a5281b;--c2:#8a5a00;--c1:#1f4e79;}
+  body{padding:0;background:#fff;font-size:11pt}
+  .w{max-width:100%}
+  .g,.kpi{break-inside:avoid;page-break-inside:avoid;border-color:#bbb}
+  h2{break-after:avoid;page-break-after:avoid}
+  .tag{border:1px solid #000;color:#000 !important;background:transparent !important}
+  .fix{background:transparent;border-left-color:#666}
+  table{font-size:9.5pt}
+  a[href]:after{content:''}
+}
 """
 
 
@@ -207,7 +219,10 @@ def gerar_html(achados, raiz, arquivos, destino, cliente=None):
 
     p = ['<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">',
          '<meta name="viewport" content="width=device-width,initial-scale=1">',
-         '<title>Diagnostico CNPJ Alfanumerico</title><style>%s</style></head><body><div class="w">' % CSS,
+         '<title>%s</title><style>%s</style></head><body><div class="w">'
+         % (e('Diagnóstico CNPJ alfanumérico'
+             + ((' — ' + (cliente or os.path.basename(raiz.rstrip(os.sep)))) if (cliente or raiz) else '')),
+            CSS),
          '<h1>Diagn&oacute;stico de compatibilidade &mdash; CNPJ alfanum&eacute;rico</h1>',
          '<p class="sub">%s &middot; %d arquivos analisados &middot; %s</p>' % (
              e(cliente or os.path.basename(raiz.rstrip(os.sep)) or raiz),

@@ -48,5 +48,11 @@ try:
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 
+print('\n4) Acentuacao dos textos do relatorio')
+r = subprocess.run([sys.executable, os.path.join(RAIZ, 'testes', 'checar-textos.py')],
+                   capture_output=True, text=True)
+passo('portugues correto no que o cliente le', r.returncode == 0,
+      (r.stdout.strip().splitlines() or [''])[0].strip())
+
 print('\n' + ('TUDO PASSOU' if not falhas else 'FALHARAM: ' + ', '.join(falhas)) + '\n')
 sys.exit(1 if falhas else 0)

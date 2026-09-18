@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diagnostico CNPJ Alfanumerico</title><style>
+<title>Diagnóstico CNPJ alfanumérico — ERP Exemplo Ltda</title><style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#14181d;--mu:#5b6672;--bd:#e3e7ec;
 --c3:#c0392b;--c2:#d98218;--c1:#4a7fb5;}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14181d;--card:#1d2228;
@@ -26,24 +26,28 @@ td.loc{white-space:nowrap;color:var(--mu);font-family:ui-monospace,Menlo,Consola
 code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;word-break:break-all}
 .ok{text-align:center;padding:48px 20px;background:var(--card);border:1px solid var(--bd);border-radius:10px}
 footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-height:1.7}
+@media print{
+  :root{--bg:#fff;--card:#fff;--tx:#000;--mu:#444;--bd:#bbb;
+        --c3:#a5281b;--c2:#8a5a00;--c1:#1f4e79;}
+  body{padding:0;background:#fff;font-size:11pt}
+  .w{max-width:100%}
+  .g,.kpi{break-inside:avoid;page-break-inside:avoid;border-color:#bbb}
+  h2{break-after:avoid;page-break-after:avoid}
+  .tag{border:1px solid #000;color:#000 !important;background:transparent !important}
+  .fix{background:transparent;border-left-color:#666}
+  table{font-size:9.5pt}
+  a[href]:after{content:''}
+}
 </style></head><body><div class="w">
 <h1>Diagn&oacute;stico de compatibilidade &mdash; CNPJ alfanum&eacute;rico</h1>
-<p class="sub">ERP Exemplo Ltda &middot; 10 arquivos analisados &middot; 18/09/2026 04:59</p>
+<p class="sub">ERP Exemplo Ltda &middot; 10 arquivos analisados &middot; 18/09/2026 06:18</p>
 <div class="kpis">
-<div class="kpi s3"><b>19</b><span>cr&iacute;ticos</span></div>
-<div class="kpi s2"><b>4</b><span>altos</span></div>
+<div class="kpi s3"><b>18</b><span>cr&iacute;ticos</span></div>
+<div class="kpi s2"><b>5</b><span>altos</span></div>
 <div class="kpi s1"><b>2</b><span>para revisar</span></div>
 <div class="kpi"><b>25</b><span>pontos no total</span></div>
+<div class="kpi"><b>9</b><span>arquivos afetados</span></div>
 </div>
-<div class="g"><h2><span class="tag t3">CRITICO</span> Conversão do CNPJ para número <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 4 ocorr&ecirc;ncia(s)</span></h2>
-<p class="why">CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.</p>
-<div class="fix"><b>Como corrigir:</b> Tratar CNPJ sempre como texto (string). Nunca converter para número.</div>
-<table>
-<tr><td class="loc">src/Cadastro.cs:6</td><td><code>var doc = Convert.ToInt64(cnpj);</code></td></tr>
-<tr><td class="loc">src/cliente.php:8</td><td><code>$cnpjNumero = intval($cnpj);</code></td></tr>
-<tr><td class="loc">src/cliente.php:15</td><td><code>$soma += intval($cnpj[$i]) * $this-&gt;pesos[$i];</code></td></tr>
-<tr><td class="loc">src/form.js:8</td><td><code>soma += parseInt(limpo.charAt(i)) * pesos[i];</code></td></tr>
-</table></div>
 <div class="g"><h2><span class="tag t3">CRITICO</span> Coluna de CNPJ com tipo numérico no banco <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 3 ocorr&ecirc;ncia(s)</span></h2>
 <p class="why">Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, ou o valor é gravado errado.</p>
 <div class="fix"><b>Como corrigir:</b> Migrar a coluna para CHAR(14) ou VARCHAR(14). Atenção ao índice e às FKs que dependem dela.</div>
@@ -53,12 +57,20 @@ footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-h
 <tr><td class="loc">src/Cadastro.cs:2</td><td><code>public long Cnpj { get; set; }</code></td></tr>
 </table></div>
 <div class="g"><h2><span class="tag t3">CRITICO</span> Limpeza com \D apaga as letras do CNPJ <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 3 ocorr&ecirc;ncia(s)</span></h2>
-<p class="why">O \D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.</p>
-<div class="fix"><b>Como corrigir:</b> Trocar por remocao apenas dos separadores: replace(/[.\/-]/g, &#x27;&#x27;).toUpperCase()</div>
+<p class="why">O \D remove tudo que não é dígito. Num CNPJ alfanumérico ele apaga as letras, transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, sem erro nenhum — e este é o bug mais perigoso de todos.</p>
+<div class="fix"><b>Como corrigir:</b> Trocar por remoção apenas dos separadores: replace(/[.\/-]/g, &#x27;&#x27;).toUpperCase()</div>
 <table>
 <tr><td class="loc">src/Cadastro.cs:4</td><td><code>cnpj = Regex.Replace(cnpj, @&quot;\D&quot;, &quot;&quot;);</code></td></tr>
 <tr><td class="loc">src/cliente.php:4</td><td><code>$cnpj = preg_replace(&#x27;/\D/&#x27;, &#x27;&#x27;, $dados[&#x27;cnpj&#x27;]);</code></td></tr>
 <tr><td class="loc">src/form.js:1</td><td><code>const limparCnpj = (v) =&gt; v.replace(/\D/g, &#x27;&#x27;);</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Conversão do CNPJ para número <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 3 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.</p>
+<div class="fix"><b>Como corrigir:</b> Tratar CNPJ sempre como texto (string). Nunca converter para número.</div>
+<table>
+<tr><td class="loc">src/Cadastro.cs:6</td><td><code>var doc = Convert.ToInt64(cnpj);</code></td></tr>
+<tr><td class="loc">src/cliente.php:8</td><td><code>$cnpjNumero = intval($cnpj);</code></td></tr>
+<tr><td class="loc">src/cliente.php:15</td><td><code>$soma += intval($cnpj[$i]) * $this-&gt;pesos[$i];</code></td></tr>
 </table></div>
 <div class="g"><h2><span class="tag t3">CRITICO</span> Chave de acesso tratada como 44 dígitos numéricos <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 2 ocorr&ecirc;ncia(s)</span></h2>
 <p class="why">A chave de acesso de 44 posições também mudou: agora é [0-9]{6}[A-Z0-9]{12}[0-9]{26}, porque carrega o CNPJ do emitente no meio. Quem valida a chave com \d{44} rejeita nota válida de emitente alfanumérico. Este ponto passa despercebido com muito mais frequência que o campo do CNPJ.</p>
@@ -67,16 +79,16 @@ footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-h
 <tr><td class="loc">contrato-cnpj.xsd:7</td><td><code>&lt;xs:pattern value=&quot;[0-9]{44}&quot;/&gt;</code></td></tr>
 <tr><td class="loc">src/Fiscal.pas:8</td><td><code>Result := TRegEx.IsMatch(AChave, &#x27;^\d{44}$&#x27;);</code></td></tr>
 </table></div>
-<div class="g"><h2><span class="tag t3">CRITICO</span> Conversao do CNPJ para numero dentro do SQL <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 2 ocorr&ecirc;ncia(s)</span></h2>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Conversão do CNPJ para número dentro do SQL <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 2 ocorr&ecirc;ncia(s)</span></h2>
 <p class="why">O CAST falha ou trunca quando o CNPJ tem letra. Aparece muito em JOIN, ORDER BY e em view antiga que compara CNPJ de tabelas com tipos diferentes.</p>
-<div class="fix"><b>Como corrigir:</b> Comparar como texto dos dois lados e criar indice sobre a coluna de texto.</div>
+<div class="fix"><b>Como corrigir:</b> Comparar como texto dos dois lados e criar índice sobre a coluna de texto.</div>
 <table>
 <tr><td class="loc">db/consultas.sql:4</td><td><code>JOIN nota n ON CAST(n.cnpj_emitente AS BIGINT) = f.cnpj</code></td></tr>
 <tr><td class="loc">db/consultas.sql:5</td><td><code>ORDER BY CAST(f.cnpj AS BIGINT);</code></td></tr>
 </table></div>
-<div class="g"><h2><span class="tag t3">CRITICO</span> CNPJ declarado como numero no schema ou no contrato da API <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
-<p class="why">Se o XSD, o JSON Schema ou o contrato da API declaram o CNPJ como inteiro, a validacao rejeita o valor alfanumerico antes de qualquer codigo rodar — e isso quebra tambem quem integra com voces.</p>
-<div class="fix"><b>Como corrigir:</b> Declarar como string com o padrao [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, usar o pacote PL_010d ou posterior.</div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> CNPJ declarado como número no schema ou no contrato da API <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Se o XSD, o JSON Schema ou o contrato da API declaram o CNPJ como inteiro, a validação rejeita o valor alfanumérico antes de qualquer código rodar — e isso quebra também quem integra com vocês.</p>
+<div class="fix"><b>Como corrigir:</b> Declarar como string com o padrão [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, usar o pacote PL_010d ou posterior.</div>
 <table>
 <tr><td class="loc">contrato-cnpj.xsd:3</td><td><code>&lt;xs:element name=&quot;cnpj&quot; type=&quot;xs:long&quot;/&gt;</code></td></tr>
 </table></div>
@@ -93,14 +105,14 @@ footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-h
 <tr><td class="loc">src/Fiscal.pas:14</td><td><code>Result := StrToInt64Def(OnlyNumber(ACNPJ), 0);</code></td></tr>
 </table></div>
 <div class="g"><h2><span class="tag t3">CRITICO</span> Limpeza com [^0-9] apaga as letras do CNPJ <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
-<p class="why">Mesmo efeito do \D: qualquer caractere que nao seja digito e removido, inclusive as letras que agora fazem parte do CNPJ.</p>
+<p class="why">Mesmo efeito do \D: qualquer caractere que não seja dígito é removido, inclusive as letras que agora fazem parte do CNPJ.</p>
 <div class="fix"><b>Como corrigir:</b> Trocar a classe por [^0-9A-Za-z] ou remover apenas os separadores [./-]</div>
 <table>
 <tr><td class="loc">src/form.js:4</td><td><code>const limpo = cnpj.replace(/[^0-9]/g, &#x27;&#x27;);</code></td></tr>
 </table></div>
-<div class="g"><h2><span class="tag t3">CRITICO</span> Conversao numerica de CNPJ em Visual Basic ou Clipper <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
-<p class="why">Val(), CLng() e equivalentes param no primeiro caractere que nao e digito. Val(&quot;00000000E08G12&quot;) devolve 0 em vez de erro — o sistema segue rodando com o CNPJ zerado.</p>
-<div class="fix"><b>Como corrigir:</b> Tratar como String em todo o caminho. Nunca converter CNPJ para numerico.</div>
+<div class="g"><h2><span class="tag t3">CRITICO</span> Conversão numérica de CNPJ em Visual Basic ou Clipper <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">Val(), CLng() e equivalentes param no primeiro caractere que não é dígito. Val(&quot;00000000E08G12&quot;) devolve 0 em vez de erro — o sistema segue rodando com o CNPJ zerado.</p>
+<div class="fix"><b>Como corrigir:</b> Tratar como String em todo o caminho. Nunca converter CNPJ para numérico.</div>
 <table>
 <tr><td class="loc">src/Legado.bas:6</td><td><code>lCnpj = Val(sCnpj)          &#x27; converte o cnpj para numero</code></td></tr>
 </table></div>
@@ -122,6 +134,12 @@ footer{color:var(--mu);font-size:12.5px;margin-top:32px;text-align:center;line-h
 <div class="fix"><b>Como corrigir:</b> Trocar o coringa para o que aceita alfanumérico na sua biblioteca (ex.: &quot;AA.AAA.AAA/AAAA-00&quot; no jQuery Mask, &quot;SS.SSS.SSS/SSSS-00&quot; no IMask).</div>
 <table>
 <tr><td class="loc">src/form.js:2</td><td><code>const mascaraCnpj = &#x27;99.999.999/9999-99&#x27;;</code></td></tr>
+</table></div>
+<div class="g"><h2><span class="tag t2">ALTO</span> Possível cálculo do dígito verificador caractere a caractere <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
+<p class="why">O cálculo do DV mudou: o valor de cada caractere agora é o código ASCII menos 48 (A vale 17, B vale 18, até Z que vale 42). A conta antiga só funciona com dígitos.</p>
+<div class="fix"><b>Como corrigir:</b> Substituir pela função de referência em cnpj.py (já testada contra o CNPJ real da Receita).</div>
+<table>
+<tr><td class="loc">src/form.js:8</td><td><code>soma += parseInt(limpo.charAt(i)) * pesos[i];</code></td></tr>
 </table></div>
 <div class="g"><h2><span class="tag t1">MEDIO</span> Coluna de CNPJ menor que 14 caracteres <span style="color:var(--mu);font-weight:400;font-size:14px">&mdash; 1 ocorr&ecirc;ncia(s)</span></h2>
 <p class="why">Se a coluna guardava o CNPJ sem formatação em menos de 14 posições, o valor será truncado.</p>

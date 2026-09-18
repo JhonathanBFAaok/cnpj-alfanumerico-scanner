@@ -7,16 +7,16 @@ REGRAS = [
         id='STRIP_NAO_DIGITO', sev=3,
         padrao=r"""(replace|preg_replace|re\.sub|Regex\.Replace|gsub)\s*\(\s*[^)]{0,40}\\D""",
         titulo='Limpeza com \\D apaga as letras do CNPJ',
-        porque='O \\D remove tudo que nao e digito. Num CNPJ alfanumerico ele apaga as letras, '
+        porque='O \\D remove tudo que não é dígito. Num CNPJ alfanumérico ele apaga as letras, '
                'transformando 00000000E08G12 em 000000000812. O dado é corrompido silenciosamente, '
                'sem erro nenhum — e este é o bug mais perigoso de todos.',
-        correcao="Trocar por remocao apenas dos separadores: replace(/[.\\/-]/g, '').toUpperCase()",
+        correcao="Trocar por remoção apenas dos separadores: replace(/[.\\/-]/g, '').toUpperCase()",
     ),
     dict(
         id='STRIP_CLASSE_09', sev=3,
         padrao=r"""(replace|preg_replace|re\.sub|Regex\.Replace)\s*\(\s*[^)]{0,40}\[\^0-9\]""",
         titulo='Limpeza com [^0-9] apaga as letras do CNPJ',
-        porque='Mesmo efeito do \\D: qualquer caractere que nao seja digito e removido, '
+        porque='Mesmo efeito do \\D: qualquer caractere que não seja dígito é removido, '
                'inclusive as letras que agora fazem parte do CNPJ.',
         correcao="Trocar a classe por [^0-9A-Za-z] ou remover apenas os separadores [./-]",
     ),
@@ -112,7 +112,7 @@ REGRAS = [
         id='SCHEMA_ANTIGO', sev=2,
         padrao=r"""(\bPL_00\d|\bPL_010[abc]\b|\bPL_010_V\d"""
                r"""|(simpleType|complexType)\s+name\s*=\s*["\'](TCnpj|TCnpjVar|TChNFe)["\'])""",
-        titulo='Referência a pacote de schema anterior ao CNPJ alfanumérico',
+        titulo='Pacote de schema XML anterior ao CNPJ alfanumérico',
         porque='Os schemas XML mudaram: TCnpj e TCnpjVar passaram a [0-9A-Z]{12}[0-9]{2} e a '
                'chave a [0-9]{6}[0-9A-Z]{12}[0-9]{26}. Validar contra o XSD antigo faz o XML '
                'falhar na sua própria máquina, antes mesmo de sair.',
@@ -130,40 +130,40 @@ REGRAS = [
         id='VAL_VB_CLIPPER', sev=3,
         padrao=r"""\b(Val|CLng|CInt|CDbl|CCur|CDec|Str2Num|VAL)\s*\(""",
         exige_token_na_linha=True,
-        titulo='Conversao numerica de CNPJ em Visual Basic ou Clipper',
-        porque='Val(), CLng() e equivalentes param no primeiro caractere que nao e digito. '
+        titulo='Conversão numérica de CNPJ em Visual Basic ou Clipper',
+        porque='Val(), CLng() e equivalentes param no primeiro caractere que não é dígito. '
                'Val("00000000E08G12") devolve 0 em vez de erro — o sistema segue rodando com '
                'o CNPJ zerado.',
-        correcao='Tratar como String em todo o caminho. Nunca converter CNPJ para numerico.',
+        correcao='Tratar como String em todo o caminho. Nunca converter CNPJ para numérico.',
     ),
     dict(
         id='SQL_CAST_NUMERICO', sev=3,
         padrao=r"""\b(CAST|CONVERT|TO_NUMBER|TO_NUMERIC)\s*\([^)]{0,60}"""
                r"""(AS\s+(BIGINT|NUMERIC|DECIMAL|INT|INTEGER|NUMBER)|,\s*(BIGINT|INT|NUMERIC))"""
                r"""|::\s*(bigint|numeric|integer|int)\b""",
-        titulo='Conversao do CNPJ para numero dentro do SQL',
+        titulo='Conversão do CNPJ para número dentro do SQL',
         porque='O CAST falha ou trunca quando o CNPJ tem letra. Aparece muito em JOIN, '
                'ORDER BY e em view antiga que compara CNPJ de tabelas com tipos diferentes.',
-        correcao='Comparar como texto dos dois lados e criar indice sobre a coluna de texto.',
+        correcao='Comparar como texto dos dois lados e criar índice sobre a coluna de texto.',
     ),
     dict(
         id='SCHEMA_CONTRATO', sev=3,
         padrao=r"""("type"\s*:\s*"(integer|number)"|xs:(integer|long|int|decimal)"""
                r"""|type\s*=\s*["\']xs:(integer|long|int|decimal)["\']"""
                r"""|maxLength\s*value\s*=\s*["\']1[0-3]["\'])""",
-        titulo='CNPJ declarado como numero no schema ou no contrato da API',
+        titulo='CNPJ declarado como número no schema ou no contrato da API',
         porque='Se o XSD, o JSON Schema ou o contrato da API declaram o CNPJ como inteiro, '
-               'a validacao rejeita o valor alfanumerico antes de qualquer codigo rodar — '
-               'e isso quebra tambem quem integra com voces.',
-        correcao='Declarar como string com o padrao [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, '
+               'a validação rejeita o valor alfanumérico antes de qualquer código rodar — '
+               'e isso quebra também quem integra com vocês.',
+        correcao='Declarar como string com o padrão [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, '
                  'usar o pacote PL_010d ou posterior.',
     ),
     dict(
         id='ORDENACAO_NUMERICA', sev=1,
         padrao=r"""ORDER\s+BY[^;]{0,60}(CAST|CONVERT|\+\s*0|::\s*(bigint|numeric))""",
-        titulo='Ordenacao de CNPJ como numero',
-        porque='Ordenar CNPJ convertendo para numero quebra quando aparece letra, e muda '
-               'a ordem de listagens e relatorios.',
+        titulo='Ordenação de CNPJ como número',
+        porque='Ordenar CNPJ convertendo para número quebra quando aparece letra, e muda '
+               'a ordem de listagens e relatórios.',
         correcao='Ordenar como texto.',
     ),
     dict(
