@@ -1,38 +1,66 @@
-/**
+/*
  * CNPJ alfanumerico - implementacao de referencia (IN RFB 2.229)
- * Validado contra 00.000.000/E08G-12 (primeiro emitido pela Receita em 31/07/2026)
+ * Validado contra 00.000.000/E08G-12, o primeiro emitido pela Receita em 31/07/2026.
+ *
+ * Escrito em ES5 de proposito: funciona em navegador antigo, em Node velho e
+ * dentro de sistema legado, sem transpilar. Nao usa arrow function, spread,
+ * template string nem o operador ??.
  */
-const PESOS = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-const RE_CNPJ = /^[0-9A-Z]{12}[0-9]{2}$/;
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();            // Node / CommonJS
+  } else if (typeof define === 'function' && define.amd) {
+    define([], factory);                   // AMD
+  } else {
+    root.CnpjAlfa = factory();             // <script> direto na pagina
+  }
+}(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
 
-/** Remove SOMENTE os separadores. Nunca use \D aqui — isso apaga as letras. */
-export function limpar(cnpj) {
-  return String(cnpj ?? '').replace(/[.\/-]/g, '').toUpperCase();
-}
+  var PESOS = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  var RE_CNPJ = /^[0-9A-Z]{12}[0-9]{2}$/;
+  var RE_SEPARADORES = /[.\/-]/g;
 
-function digito(base) {
-  const pesos = PESOS.slice(-base.length);
-  const soma = [...base].reduce((acc, c, i) => acc + (c.charCodeAt(0) - 48) * pesos[i], 0);
-  const resto = soma % 11;
-  return resto < 2 ? 0 : 11 - resto;
-}
+  /* Remove SOMENTE os separadores. Nunca use \D aqui: isso apaga as letras. */
+  function limpar(cnpj) {
+    if (cnpj === null || cnpj === undefined) { return ''; }
+    return String(cnpj).replace(RE_SEPARADORES, '').toUpperCase();
+  }
 
-export function calcularDv(base12) {
-  const base = limpar(base12).slice(0, 12);
-  const d1 = digito(base);
-  const d2 = digito(base + d1);
-  return `${d1}${d2}`;
-}
+  function digito(base) {
+    var pesos = PESOS.slice(PESOS.length - base.length);
+    var soma = 0;
+    for (var i = 0; i < base.length; i++) {
+      soma += (base.charCodeAt(i) - 48) * pesos[i];   // 'A' = 17 ... 'Z' = 42
+    }
+    var resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  }
 
-export function validar(cnpj) {
-  const c = limpar(cnpj);
-  if (!RE_CNPJ.test(c)) return false;
-  if (new Set(c).size === 1) return false;
-  return calcularDv(c.slice(0, 12)) === c.slice(12);
-}
+  function calcularDv(base12) {
+    var base = limpar(base12).substring(0, 12);
+    var d1 = digito(base);
+    var d2 = digito(base + String(d1));
+    return String(d1) + String(d2);
+  }
 
-export function formatar(cnpj) {
-  const c = limpar(cnpj);
-  if (c.length !== 14) return cnpj;
-  return `${c.slice(0,2)}.${c.slice(2,5)}.${c.slice(5,8)}/${c.slice(8,12)}-${c.slice(12)}`;
-}
+  function validar(cnpj) {
+    var c = limpar(cnpj);
+    if (!RE_CNPJ.test(c)) { return false; }
+    var todosIguais = true;
+    for (var i = 1; i < c.length; i++) {
+      if (c.charAt(i) !== c.charAt(0)) { todosIguais = false; break; }
+    }
+    if (todosIguais) { return false; }
+    return calcularDv(c.substring(0, 12)) === c.substring(12);
+  }
+
+  function formatar(cnpj) {
+    var c = limpar(cnpj);
+    if (c.length !== 14) { return cnpj; }
+    return c.substring(0, 2) + '.' + c.substring(2, 5) + '.' + c.substring(5, 8) +
+           '/' + c.substring(8, 12) + '-' + c.substring(12);
+  }
+
+  return { limpar: limpar, calcularDv: calcularDv, validar: validar, formatar: formatar };
+}));

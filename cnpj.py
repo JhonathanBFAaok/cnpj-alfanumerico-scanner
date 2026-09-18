@@ -61,6 +61,14 @@ if __name__ == '__main__':
         ('00.000.000/E08G-13', False),  # DV errado
         ('11.222.333/0001-80', False),  # DV errado
         ('00.000.000/0000-00', False),  # repetido
+        ('', False),                    # vazio
+        (None, False),                  # nulo
+        ('abc', False),                 # lixo
+        ('00.000.000/E08G-1', False),   # curto demais
+        ('00.000.000/E08G-123', False), # longo demais
+        ('00.000.000/e08g-12', True),   # minusculo deve ser aceito
+        ('00000000E08G12', True),       # sem formatacao
+        ('00.000.000/E0#G-12', False),  # caractere invalido
     ]
     ok = True
     for valor, esperado in testes:

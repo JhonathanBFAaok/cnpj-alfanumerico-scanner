@@ -13,9 +13,25 @@ em processos". Base normativa: **IN RFB nº 2.229**.
 
 ## Como usar
 
-```bash
-python scan.py /caminho/do/projeto -o relatorio.html -c "Nome do Cliente"
+**Windows** (é onde a maior parte do legado brasileiro roda):
+
+```bat
+py scan.py "C:\caminho\do\sistema" -o relatorio.html -c "Nome da Empresa"
 ```
+
+**Linux ou macOS:**
+
+```bash
+python3 scan.py /caminho/do/sistema -o relatorio.html -c "Nome da Empresa"
+```
+
+Precisa apenas de **Python 3.8 ou superior**, sem instalar biblioteca nenhuma.
+Se não tiver Python na máquina: https://www.python.org/downloads/ — na instalação
+marque **"Add python.exe to PATH"**. São uns 2 minutos, e o Python pode ser
+desinstalado depois sem deixar nada para trás.
+
+Se preferir não instalar nada, dá para rodar numa chamada rápida junto com
+alguém que já tenha o ambiente.
 
 Opções:
 
@@ -25,8 +41,9 @@ Opções:
 | `-c`, `--cliente` | nome que aparece no cabeçalho do relatório |
 | `--json` | exporta os achados em JSON |
 
-Não precisa instalar nada além do Python 3. **Nenhum código sai da máquina** —
-a análise é 100% local. Esse é o argumento que derruba a objeção de confiança.
+**Nenhum código sai da máquina.** A análise é 100% local: o programa não importa
+`requests`, não importa `urllib` e não faz nenhuma chamada de rede. Dá para
+conferir isso com um Ctrl+F antes de rodar.
 
 ---
 
@@ -68,8 +85,17 @@ O mais perigoso é o `\D`: ele não gera erro nenhum. `00000000E08G12` vira
 
 Implementação de referência pronta para substituir o validador antigo:
 
-- `cnpj.php` · `cnpj.js` · `Cnpj.cs` · `migracao.sql` (Postgres, MySQL, SQL Server)
-- `cnpj.py` (na raiz) — também serve como referência
+| Arquivo | Compatível com | Por quê |
+|---|---|---|
+| `cnpj.php` | **PHP 5.4+** | sem type hint escalar, sem const de classe |
+| `cnpj.js` | **ES5** (UMD) | roda em `<script>`, CommonJS e AMD, sem transpilar |
+| `Cnpj.cs` | **C# 5 / .NET 4.0** | sem interpolação de string, sem LINQ |
+| `cnpj.py` (raiz) | **Python 3.8+** | só biblioteca padrão |
+| `migracao.sql` | Postgres, MySQL, SQL Server | |
+
+As versões conservadoras são de propósito: quem tem o problema do CNPJ
+alfanumérico costuma ser justamente quem mantém sistema antigo. Um validador
+que exige PHP 8 não serve pra quem está em PHP 5.6.
 
 **O cálculo do DV mudou:** o valor de cada caractere agora é o código ASCII
 menos 48. `'0'`–`'9'` valem 0–9, `'A'` vale 17, `'B'` vale 18, até `'Z'` que
