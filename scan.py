@@ -15,6 +15,15 @@ import html
 import argparse
 from datetime import datetime
 
+# O console do Windows costuma ser cp850 ou cp1252. Se um arquivo do cliente
+# tiver emoji, travessao ou caractere asiatico, um print cru derruba o programa
+# com UnicodeEncodeError. Trocar por '?' e melhor que quebrar na frente dele.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(errors='replace')
+    except Exception:
+        pass
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from regras import REGRAS, EXTENSOES, IGNORAR_PASTAS, PASTAS_TESTE, TOKENS_CNPJ
 
@@ -241,8 +250,23 @@ def gerar_html(achados, raiz, arquivos, destino, cliente=None):
              'O resultado indica pontos prov&aacute;veis de quebra e n&atilde;o substitui revis&atilde;o t&eacute;cnica.</footer>')
     p.append('</div></body></html>')
 
-    with open(destino, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(p))
+    conteudo = '\n'.join(p)
+    try:
+        with open(destino, 'w', encoding='utf-8') as f:
+            f.write(conteudo)
+    except OSError as e:
+        alt = os.path.join(os.getcwd(), 'relatorio-cnpj.html')
+        print('\nNao consegui gravar em %s (%s).' % (destino, e.strerror or e))
+        try:
+            with open(alt, 'w', encoding='utf-8') as f:
+                f.write(conteudo)
+            print('Gravei aqui em vez disso: %s' % alt)
+            return alt
+        except OSError:
+            print('Tambem nao consegui gravar na pasta atual. Rode de uma pasta onde voce'
+                  ' tenha permissao de escrita, ou use -o com outro caminho.')
+            return None
+    return destino
 
 
 def main():
@@ -282,8 +306,9 @@ def main():
             q = sum(1 for x in achados if x['regra_id'] == a['regra_id'])
             print('  [%-7s] %-52s %d ocorrencia(s)' % (SEV_NOME[a['sev']], a['titulo'][:52], q))
 
-    gerar_html(achados, raiz, arquivos, args.saida, args.cliente)
-    print('\nRelatorio: %s' % os.path.abspath(args.saida))
+    destino = gerar_html(achados, raiz, arquivos, args.saida, args.cliente)
+    if destino:
+        print('\nRelatorio: %s' % os.path.abspath(destino))
 
     if args.json_out:
         # caminho relativo: o JSON nao deve carregar a estrutura de pastas da maquina
@@ -292,11 +317,34 @@ def main():
             b = dict(a)
             b['arquivo'] = os.path.relpath(a['arquivo'], raiz).replace(os.sep, '/')
             export.append(b)
-        with open(args.json_out, 'w', encoding='utf-8') as f:
-            json.dump(export, f, ensure_ascii=False, indent=2)
-        print('JSON:      %s' % os.path.abspath(args.json_out))
+        try:
+            with open(args.json_out, 'w', encoding='utf-8') as f:
+                json.dump(export, f, ensure_ascii=False, indent=2)
+            print('JSON:      %s' % os.path.abspath(args.json_out))
+        except OSError as e:
+            print('Nao consegui gravar o JSON em %s (%s). O relatorio HTML foi gerado '
+                  'normalmente.' % (args.json_out, e.strerror or e))
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print('\nInterrompido.')
+        sys.exit(130)
+    except Exception as e:                                  # noqa: BLE001
+        # Um traceback na tela nao ajuda ninguem. Mensagem curta e o detalhe
+        # guardado em arquivo, para quem quiser reportar.
+        print('\nErro inesperado: %s: %s' % (type(e).__name__, e))
+        try:
+            import traceback
+            destino = os.path.join(os.getcwd(), 'cnpj-scanner-erro.log')
+            with open(destino, 'w', encoding='utf-8') as f:
+                traceback.print_exc(file=f)
+            print('Detalhes em: %s' % destino)
+        except Exception:
+            pass
+        print('Se puder, relate em: '
+              'https://github.com/JhonathanBFAaok/cnpj-alfanumerico-scanner/issues')
+        sys.exit(1)

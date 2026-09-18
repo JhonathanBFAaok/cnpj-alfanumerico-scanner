@@ -138,6 +138,32 @@ não ajuda ninguém a decidir.
 
 ---
 
+## Robustez
+
+Testado contra os casos que aparecem em código real e derrubam ferramenta:
+
+- **Console do Windows** (cp850/cp1252): arquivo com emoji, travessão ou
+  caractere asiático não derruba mais o programa. Antes disso era
+  `UnicodeEncodeError` no meio da varredura.
+- **Arquivos em Windows-1252**, comuns em legado brasileiro: lidos corretamente,
+  com os acentos preservados no relatório.
+- **Arquivo binário com extensão de texto** (`.dfm` do Delphi pode ser binário):
+  não polui o relatório.
+- **Quebra de linha CRLF**, linha minificada de milhares de caracteres, arquivo
+  vazio, arquivo só com bytes nulos, pasta vazia, arquivo sem permissão de
+  leitura, link simbólico circular, caminho com espaço e acentuação.
+- **Conteúdo do código é escapado no HTML.** Um arquivo contendo
+  `<script>alert(1)</script>` aparece como texto; o relatório não executa nada e
+  não carrega script nenhum.
+- **Caminho de saída inválido**: grava na pasta atual em vez de quebrar.
+- **Qualquer erro inesperado**: mensagem curta na tela e o detalhe num arquivo
+  de log, nunca um traceback.
+
+Desempenho: 2 a 3 segundos em projetos reais de 1.000 a 2.700 arquivos; menos de
+1 segundo em 10.000 arquivos.
+
+---
+
 ## Limites — leia antes de prometer algo a um cliente
 
 - É **análise estática**. Aponta pontos prováveis de quebra; não substitui
