@@ -1,5 +1,49 @@
 [
   {
+    "arquivo": "contrato-cnpj.xsd",
+    "linha": 3,
+    "codigo": "<xs:element name=\"cnpj\" type=\"xs:long\"/>",
+    "regra_id": "SCHEMA_CONTRATO",
+    "sev": 3,
+    "titulo": "CNPJ declarado como numero no schema ou no contrato da API",
+    "porque": "Se o XSD, o JSON Schema ou o contrato da API declaram o CNPJ como inteiro, a validacao rejeita o valor alfanumerico antes de qualquer codigo rodar — e isso quebra tambem quem integra com voces.",
+    "correcao": "Declarar como string com o padrao [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, usar o pacote PL_010d ou posterior.",
+    "linguagem": "Schema XML"
+  },
+  {
+    "arquivo": "contrato-cnpj.xsd",
+    "linha": 7,
+    "codigo": "<xs:pattern value=\"[0-9]{44}\"/>",
+    "regra_id": "CHAVE_44_DIGITOS",
+    "sev": 3,
+    "titulo": "Chave de acesso tratada como 44 dígitos numéricos",
+    "porque": "A chave de acesso de 44 posições também mudou: agora é [0-9]{6}[A-Z0-9]{12}[0-9]{26}, porque carrega o CNPJ do emitente no meio. Quem valida a chave com \\d{44} rejeita nota válida de emitente alfanumérico. Este ponto passa despercebido com muito mais frequência que o campo do CNPJ.",
+    "correcao": "Trocar a validação para [0-9]{6}[A-Z0-9]{12}[0-9]{26} e garantir que a chave seja tratada como texto em todo o caminho (banco, índice, ordenação).",
+    "linguagem": "Schema XML"
+  },
+  {
+    "arquivo": "db/consultas.sql",
+    "linha": 4,
+    "codigo": "JOIN nota n ON CAST(n.cnpj_emitente AS BIGINT) = f.cnpj",
+    "regra_id": "SQL_CAST_NUMERICO",
+    "sev": 3,
+    "titulo": "Conversao do CNPJ para numero dentro do SQL",
+    "porque": "O CAST falha ou trunca quando o CNPJ tem letra. Aparece muito em JOIN, ORDER BY e em view antiga que compara CNPJ de tabelas com tipos diferentes.",
+    "correcao": "Comparar como texto dos dois lados e criar indice sobre a coluna de texto.",
+    "linguagem": "SQL"
+  },
+  {
+    "arquivo": "db/consultas.sql",
+    "linha": 5,
+    "codigo": "ORDER BY CAST(f.cnpj AS BIGINT);",
+    "regra_id": "SQL_CAST_NUMERICO",
+    "sev": 3,
+    "titulo": "Conversao do CNPJ para numero dentro do SQL",
+    "porque": "O CAST falha ou trunca quando o CNPJ tem letra. Aparece muito em JOIN, ORDER BY e em view antiga que compara CNPJ de tabelas com tipos diferentes.",
+    "correcao": "Comparar como texto dos dois lados e criar indice sobre a coluna de texto.",
+    "linguagem": "SQL"
+  },
+  {
     "arquivo": "db/schema.sql",
     "linha": 4,
     "codigo": "cnpj     BIGINT NOT NULL UNIQUE,",
@@ -218,5 +262,16 @@
     "porque": "CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, retorna zero ou trunca no primeiro caractere inválido.",
     "correcao": "Tratar CNPJ sempre como texto (string). Nunca converter para número.",
     "linguagem": "JavaScript"
+  },
+  {
+    "arquivo": "src/Legado.bas",
+    "linha": 6,
+    "codigo": "lCnpj = Val(sCnpj)          ' converte o cnpj para numero",
+    "regra_id": "VAL_VB_CLIPPER",
+    "sev": 3,
+    "titulo": "Conversao numerica de CNPJ em Visual Basic ou Clipper",
+    "porque": "Val(), CLng() e equivalentes param no primeiro caractere que nao e digito. Val(\"00000000E08G12\") devolve 0 em vez de erro — o sistema segue rodando com o CNPJ zerado.",
+    "correcao": "Tratar como String em todo o caminho. Nunca converter CNPJ para numerico.",
+    "linguagem": "Visual Basic"
   }
 ]

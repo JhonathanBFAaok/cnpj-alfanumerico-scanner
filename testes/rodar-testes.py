@@ -35,7 +35,7 @@ def contar(pasta):
 
 print('\n2) Scanner - deteccao')
 n = contar(os.path.join(RAIZ, 'exemplo-projeto'))
-passo('projeto quebrado acusa 20 pontos', n == 20, 'achou %d' % n)
+passo('projeto quebrado acusa 25 pontos', n == 25, 'achou %d' % n)
 
 print('\n3) Scanner - falso positivo')
 tmp = tempfile.mkdtemp()

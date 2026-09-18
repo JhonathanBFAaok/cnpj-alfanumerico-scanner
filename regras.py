@@ -124,6 +124,45 @@ REGRAS = [
         correcao='Ajustar a geração do código de barras do DANFE/DACTE conforme a NT 2026.004.',
     ),
     dict(
+        id='VAL_VB_CLIPPER', sev=3,
+        padrao=r"""\b(Val|CLng|CInt|CDbl|CCur|CDec|Str2Num|VAL)\s*\(""",
+        titulo='Conversao numerica de CNPJ em Visual Basic ou Clipper',
+        porque='Val(), CLng() e equivalentes param no primeiro caractere que nao e digito. '
+               'Val("00000000E08G12") devolve 0 em vez de erro — o sistema segue rodando com '
+               'o CNPJ zerado.',
+        correcao='Tratar como String em todo o caminho. Nunca converter CNPJ para numerico.',
+    ),
+    dict(
+        id='SQL_CAST_NUMERICO', sev=3,
+        padrao=r"""\b(CAST|CONVERT|TO_NUMBER|TO_NUMERIC)\s*\([^)]{0,60}"""
+               r"""(AS\s+(BIGINT|NUMERIC|DECIMAL|INT|INTEGER|NUMBER)|,\s*(BIGINT|INT|NUMERIC))"""
+               r"""|::\s*(bigint|numeric|integer|int)\b""",
+        titulo='Conversao do CNPJ para numero dentro do SQL',
+        porque='O CAST falha ou trunca quando o CNPJ tem letra. Aparece muito em JOIN, '
+               'ORDER BY e em view antiga que compara CNPJ de tabelas com tipos diferentes.',
+        correcao='Comparar como texto dos dois lados e criar indice sobre a coluna de texto.',
+    ),
+    dict(
+        id='SCHEMA_CONTRATO', sev=3,
+        padrao=r"""("type"\s*:\s*"(integer|number)"|xs:(integer|long|int|decimal)"""
+               r"""|type\s*=\s*["\']xs:(integer|long|int|decimal)["\']"""
+               r"""|maxLength\s*value\s*=\s*["\']1[0-3]["\'])""",
+        titulo='CNPJ declarado como numero no schema ou no contrato da API',
+        porque='Se o XSD, o JSON Schema ou o contrato da API declaram o CNPJ como inteiro, '
+               'a validacao rejeita o valor alfanumerico antes de qualquer codigo rodar — '
+               'e isso quebra tambem quem integra com voces.',
+        correcao='Declarar como string com o padrao [0-9A-Z]{12}[0-9]{2}. No XSD da NF-e, '
+                 'usar o pacote PL_010d ou posterior.',
+    ),
+    dict(
+        id='ORDENACAO_NUMERICA', sev=1,
+        padrao=r"""ORDER\s+BY[^;]{0,60}(CAST|CONVERT|\+\s*0|::\s*(bigint|numeric))""",
+        titulo='Ordenacao de CNPJ como numero',
+        porque='Ordenar CNPJ convertendo para numero quebra quando aparece letra, e muda '
+               'a ordem de listagens e relatorios.',
+        correcao='Ordenar como texto.',
+    ),
+    dict(
         id='COLUNA_CURTA', sev=1,
         padrao=r"""(cnpj|cgc)\w*\s+(CHAR|VARCHAR|NVARCHAR|VARCHAR2)\s*\(\s*(1[0-3]|[1-9])\s*\)""",
         titulo='Coluna de CNPJ menor que 14 caracteres',
@@ -140,6 +179,15 @@ EXTENSOES = {
     '.pas': 'Delphi/Pascal', '.dfm': 'Delphi/Pascal', '.dpr': 'Delphi/Pascal',
     '.inc': 'PHP', '.phtml': 'PHP', '.html': 'HTML', '.htm': 'HTML',
     '.rb': 'Ruby', '.go': 'Go', '.cbl': 'COBOL', '.cob': 'COBOL',
+    # Legado que ainda roda em muita casa de software brasileira
+    '.bas': 'Visual Basic', '.frm': 'Visual Basic', '.cls': 'Visual Basic',
+    '.ctl': 'Visual Basic', '.asp': 'ASP Classico',
+    '.prg': 'Clipper/Harbour', '.ch': 'Clipper/Harbour',
+    '.aspx': 'ASP.NET', '.ascx': 'ASP.NET', '.cshtml': 'ASP.NET',
+    '.razor': 'ASP.NET', '.jsp': 'Java', '.4gl': 'Progress/4GL',
+    # Schemas e contratos: onde o formato do CNPJ fica declarado
+    '.xsd': 'Schema XML', '.wsdl': 'Schema XML', '.json': 'JSON/Config',
+    '.yaml': 'Config', '.yml': 'Config', '.xml': 'XML',
 }
 
 IGNORAR_PASTAS = {

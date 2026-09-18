@@ -45,11 +45,19 @@ a análise é 100% local. Esse é o argumento que derruba a objeção de confian
 | CRÍTICO | Chave de acesso validada como 44 dígitos numéricos |
 | CRÍTICO | `OnlyNumber` / `StrToInt64Def` sobre CNPJ ou chave (o bug que o próprio ACBr teve) |
 | ALTO | Referência a pacote de schema antigo (PL_010c) |
+| CRÍTICO | `Val()` / `CLng()` em Visual Basic ou Clipper (para no 1º não-dígito e devolve 0) |
+| CRÍTICO | `CAST`/`CONVERT` do CNPJ para número dentro do SQL |
+| CRÍTICO | CNPJ declarado como inteiro no XSD, JSON Schema ou contrato de API |
+| MÉDIO | Ordenação de CNPJ como número |
 | MÉDIO | Código de barras CODE-128C no DANFE |
 | MÉDIO | Coluna menor que 14 caracteres |
 
-Linguagens cobertas: PHP, JavaScript, TypeScript, Vue, Python, C#, VB.NET,
-Java, Kotlin, SQL, Delphi/Pascal, Ruby, Go, COBOL, HTML.
+Linguagens e formatos cobertos: PHP, JavaScript, TypeScript, Vue, Python, C#,
+VB.NET, **Visual Basic 6** (`.bas`, `.frm`, `.cls`), **Clipper/Harbour** (`.prg`),
+**ASP clássico**, ASP.NET (`.aspx`, `.cshtml`, `.razor`), Java/JSP, Kotlin, SQL,
+Delphi/Pascal, Progress/4GL, Ruby, Go, COBOL, HTML — e ainda os **contratos**:
+`.xsd`, `.wsdl`, JSON Schema, YAML e XML, onde o formato do CNPJ costuma estar
+declarado como número sem ninguém lembrar.
 
 O mais perigoso é o `\D`: ele não gera erro nenhum. `00000000E08G12` vira
 `000000000812` e o dado é gravado corrompido, sem ninguém perceber.
@@ -97,7 +105,7 @@ demonstrar a ferramenta e para testar mudanças nas regras.
 python scan.py exemplo-projeto -o exemplo-relatorio.html -c "ERP Exemplo Ltda"
 ```
 
-Resultado esperado: **20 pontos** (14 críticos, 4 altos, 2 médios), sem nenhum
+Resultado esperado: **25 pontos** (19 críticos, 4 altos, 2 médios), sem nenhum
 falso positivo.
 
 ---
