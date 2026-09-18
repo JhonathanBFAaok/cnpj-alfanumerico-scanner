@@ -16,14 +16,22 @@ import argparse
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from regras import REGRAS, EXTENSOES, IGNORAR_PASTAS, TOKENS_CNPJ
+from regras import REGRAS, EXTENSOES, IGNORAR_PASTAS, PASTAS_TESTE, TOKENS_CNPJ
 
-JANELA = 6           # linhas de contexto para associar a regra a uma mencao de CNPJ
+MAX_POR_ARQUIVO_REGRA = 3   # evita que um arquivo gerado repetitivo domine o relatorio
+JANELA = 3           # linhas de contexto ao redor de uma mencao solta de CNPJ
+ESCOPO_FUNCAO = 30   # linhas apos declarar uma funcao cujo nome fala de CNPJ
 
 # Linhas que sao so comentario nao viram achado (evita acusar exemplo citado em doc).
 RE_COMENTARIO = re.compile(r'^\s*(//|#|\*|--|/\*|<!--|\'\'\'|\"\"\"|;)')
 
 # Marcas de que o arquivo JA foi adaptado ao formato novo.
+# Linha que ja usa o formato novo: nao e achado.
+RE_LINHA_ADAPTADA = re.compile(r'\[A-Za-z0-9\]\{12\}|\[0-9A-Za-z\]\{12\}|\[A-Z0-9\]\{12\}|\[0-9A-Z\]\{12\}')
+
+# Comentario no fim da linha: o codigo antes dele e o que vale.
+RE_COMENTARIO_FINAL = re.compile(r'(?<![:\\w])//|#(?!\{)|--\s|/\*')
+
 RE_ADAPTADO = re.compile(r'\[0-9A-Z\]\{12\}|\[0-9A-Za-z\]\{12\}|-\s*48\b', re.IGNORECASE)
 
 # Nao varrer o relatorio que este proprio scanner gera.
@@ -38,6 +46,13 @@ for r in REGRAS:
     r['_re'] = re.compile(r['padrao'], re.IGNORECASE)
 
 _re_token = re.compile('|'.join(TOKENS_CNPJ), re.IGNORECASE)
+
+# Declaracao de funcao/metodo cujo nome menciona CNPJ ou chave: tudo no corpo
+# dela e contexto de CNPJ, mesmo que a variavel la dentro se chame "limpo".
+_re_funcao_cnpj = re.compile(
+    r'\b(function|def|func|procedure|sub|method|public|private|protected|static|'
+    r'void|async|const|let|var|val|fun)\b[^=;{]{0,80}?'
+    r'\w*(cnpj|cgc|chave|chnfe)\w*\s*[(=:]', re.IGNORECASE)
 
 
 def menciona_cnpj(linha):
@@ -71,33 +86,61 @@ def varrer_arquivo(caminho, linguagem):
     perto = set()
     for i in ancoras:
         perto.update(range(max(0, i - JANELA), min(len(linhas), i + JANELA + 1)))
+    # corpo de funcao cujo nome fala de CNPJ entra inteiro
+    for i, l in enumerate(linhas):
+        if _re_funcao_cnpj.search(l):
+            perto.update(range(i, min(len(linhas), i + ESCOPO_FUNCAO + 1)))
 
     achados = []
+    vistos = {}          # regra_id -> quantas vezes ja registrei neste arquivo
+    suprimidos = {}      # regra_id -> quantas deixei de registrar
     for i in sorted(perto):
         linha = linhas[i]
         if len(linha) > 600:
             continue
         if RE_COMENTARIO.match(linha):
             continue
+        if RE_LINHA_ADAPTADA.search(linha):
+            continue                      # a linha ja declara o formato novo
+        m = RE_COMENTARIO_FINAL.search(linha)
+        if m:
+            codigo_util = linha[:m.start()]
+            if not menciona_cnpj(codigo_util) and not codigo_util.strip():
+                continue
+            linha_match = codigo_util      # so o codigo, sem o comentario
+        else:
+            linha_match = linha
         for regra in REGRAS:
             if adaptado and regra['id'] in REGRAS_SO_LEGADO:
                 continue
             if regra.get('contexto_sql') and linguagem != 'SQL' and not menciona_cnpj(linha):
                 continue
-            if regra['_re'].search(linha):
+            # regras de severidade critica e propensas a ruido exigem o termo na
+            # propria linha: int() de valor, data ou contagem nao e conversao de CNPJ
+            if regra.get('exige_token_na_linha') and not menciona_cnpj(linha_match):
+                continue
+            if regra['_re'].search(linha_match):
+                n = vistos.get(regra['id'], 0)
+                if n >= MAX_POR_ARQUIVO_REGRA:
+                    suprimidos[regra['id']] = suprimidos.get(regra['id'], 0) + 1
+                    break
+                vistos[regra['id']] = n + 1
                 achados.append(dict(
                     arquivo=caminho, linha=i + 1, codigo=linha.strip()[:300],
                     regra_id=regra['id'], sev=regra['sev'], titulo=regra['titulo'],
                     porque=regra['porque'], correcao=regra['correcao'], linguagem=linguagem,
                 ))
                 break  # uma regra por linha, a de maior prioridade
+    for a in achados:
+        a['repeticoes_no_arquivo'] = suprimidos.get(a['regra_id'], 0)
     return achados
 
 
-def varrer(raiz):
+def varrer(raiz, incluir_testes=False):
     achados, arquivos, ignorados = [], 0, 0
+    pular = set(IGNORAR_PASTAS) if incluir_testes else set(IGNORAR_PASTAS) | PASTAS_TESTE
     for pasta, subpastas, nomes in os.walk(raiz):
-        subpastas[:] = [d for d in subpastas if d not in IGNORAR_PASTAS and not d.startswith('.')]
+        subpastas[:] = [d for d in subpastas if d.lower() not in pular and not d.startswith('.')]
         for nome in nomes:
             ext = os.path.splitext(nome)[1].lower()
             if ext not in EXTENSOES:
@@ -165,6 +208,8 @@ def gerar_html(achados, raiz, arquivos, destino, cliente=None):
          '<div class="kpi s2"><b>%d</b><span>altos</span></div>' % n[2],
          '<div class="kpi s1"><b>%d</b><span>para revisar</span></div>' % n[1],
          '<div class="kpi"><b>%d</b><span>pontos no total</span></div>' % len(achados),
+         '<div class="kpi"><b>%d</b><span>arquivos afetados</span></div>'
+         % len(set(a['arquivo'] for a in achados)),
          '</div>']
 
     if not achados:
@@ -182,8 +227,10 @@ def gerar_html(achados, raiz, arquivos, destino, cliente=None):
             p.append('<table>')
             for a in g[:25]:
                 rel = os.path.relpath(a['arquivo'], raiz)
-                p.append('<tr><td class="loc">%s:%d</td><td><code>%s</code></td></tr>'
-                         % (e(rel), a['linha'], e(a['codigo'])))
+                rep = a.get('repeticoes_no_arquivo') or 0
+                extra = (' <span style="color:var(--mu)">(+%d no mesmo arquivo)</span>' % rep) if rep else ''
+                p.append('<tr><td class="loc">%s:%d</td><td><code>%s</code>%s</td></tr>'
+                         % (e(rel), a['linha'], e(a['codigo']), extra))
             if len(g) > 25:
                 p.append('<tr><td class="loc">&hellip;</td><td>e mais %d ocorr&ecirc;ncia(s)</td></tr>'
                          % (len(g) - 25))
@@ -204,6 +251,8 @@ def main():
     ap.add_argument('-o', '--saida', default='relatorio-cnpj.html')
     ap.add_argument('--json', dest='json_out')
     ap.add_argument('-c', '--cliente', help='nome do cliente, exibido no cabecalho do relatorio')
+    ap.add_argument('--incluir-testes', action='store_true',
+                    help='varrer tambem pastas de teste e fixtures (por padrao sao ignoradas)')
     args = ap.parse_args()
 
     raiz = os.path.abspath(args.pasta)
@@ -212,14 +261,16 @@ def main():
         return 2
 
     print('Analisando %s ...' % raiz)
-    achados, arquivos, ignorados = varrer(raiz)
+    achados, arquivos, ignorados = varrer(raiz, args.incluir_testes)
 
     n = {3: 0, 2: 0, 1: 0}
     for a in achados:
         n[a['sev']] += 1
 
+    afetados = len(set(a['arquivo'] for a in achados))
     print('\n%d arquivos analisados%s' % (arquivos, (', %d ignorados por tamanho' % ignorados) if ignorados else ''))
-    print('CRITICO: %d   ALTO: %d   MEDIO: %d   (total %d)' % (n[3], n[2], n[1], len(achados)))
+    print('%d arquivo(s) com problema' % afetados)
+    print('CRITICO: %d   ALTO: %d   MEDIO: %d   (total %d pontos)' % (n[3], n[2], n[1], len(achados)))
 
     if achados:
         print('\nPrincipais pontos:')

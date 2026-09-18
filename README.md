@@ -105,8 +105,36 @@ demonstrar a ferramenta e para testar mudanças nas regras.
 python scan.py exemplo-projeto -o exemplo-relatorio.html -c "ERP Exemplo Ltda"
 ```
 
-Resultado esperado: **25 pontos** (19 críticos, 4 altos, 2 médios), sem nenhum
+Resultado esperado: **25 pontos** (18 críticos, 5 altos, 2 médios) em 9 arquivos, sem nenhum
 falso positivo.
+
+---
+
+## Precisão
+
+O scanner foi calibrado contra código brasileiro de verdade — as bibliotecas
+fiscais de código aberto `sped-nfe`, `sped-da`, `sped-common` (NFePHP),
+`erpbrasil.edoc`, `erpbrasil.base`, `pysped` e o ERP `stoq`. Mais de 3.000
+arquivos.
+
+Isso derrubou quatro fontes de falso positivo que a bateria sintética não
+pegava:
+
+- padrão sem delimitador de palavra (`TCnpj` casava dentro de `getCnpj`)
+- comentário no fim da linha marcado como se fosse código
+- prosa em inglês (`the CNPJ number`) lida como declaração de coluna
+- proximidade por número de linhas, que marcava `int()` de valor, data e
+  contagem só por estarem perto de uma menção a CNPJ
+
+Trocas feitas por causa disso: o contexto passou a ser o **corpo da função**
+quando o nome dela fala de CNPJ, não uma janela fixa de linhas; regras de
+severidade crítica exigem o termo na própria linha; pastas de teste e fixture
+ficam de fora por padrão (use `--incluir-testes` para varrer também); e cada
+regra reporta no máximo 3 ocorrências por arquivo, para que um arquivo gerado
+repetitivo não domine o relatório.
+
+O relatório conta **pontos e arquivos afetados**, não linhas. Um número inflado
+não ajuda ninguém a decidir.
 
 ---
 

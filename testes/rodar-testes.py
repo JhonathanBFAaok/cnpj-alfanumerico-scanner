@@ -28,7 +28,7 @@ def contar(pasta):
                             '-o', os.path.join(tmp, 'r.html')], capture_output=True, text=True)
         for linha in r.stdout.splitlines():
             if linha.startswith('CRITICO:'):
-                return int(linha.split('total')[1].strip(' )'))
+                return int(linha.split('total')[1].replace('pontos','').strip(' )'))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return -1

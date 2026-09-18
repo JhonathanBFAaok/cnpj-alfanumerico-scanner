@@ -25,6 +25,7 @@ REGRAS = [
         padrao=r"""\b(parseInt|parseFloat|intval|floatval|Number|int|long|Int32\.Parse|Int64\.Parse|"""
                r"""Convert\.To(Int32|Int64|Decimal)|Long\.parseLong|Integer\.parseInt|StrToInt64|StrToInt|"""
                r"""to_i|Decimal\.Parse)\s*\(""",
+        exige_token_na_linha=True,
         titulo='Conversão do CNPJ para número',
         porque='CNPJ com letra não converte para inteiro. Dependendo da linguagem isso lança exceção, '
                'retorna zero ou trunca no primeiro caractere inválido.',
@@ -32,8 +33,9 @@ REGRAS = [
     ),
     dict(
         id='COLUNA_NUMERICA', sev=3,
-        padrao=r"""((cnpj|cgc)\w*\s+(BIGINT|NUMERIC|DECIMAL|INTEGER|INT|NUMBER|FLOAT|DOUBLE|SERIAL|MONEY)\b"""
-               r"""|\b(long|int|integer|decimal|double|float|bigint|Int64|Int32|Long|Integer|Decimal|Double|BigInteger|number)\s+\w*(cnpj|cgc)\w*\b"""
+        padrao=r"""((cnpj|cgc)\w*\s+(BIGINT|NUMERIC|DECIMAL|INTEGER|INT|SERIAL|MONEY)\b"""
+               r"""|(cnpj|cgc)\w*\s+NUMBER\s*\("""
+               r"""|\b(long|int|integer|decimal|double|float|bigint|Int64|Int32|Long|Integer|Decimal|Double|BigInteger)\s+\w*(cnpj|cgc)\w*\b"""
                r"""|\b(cnpj|cgc)\w*\s*:\s*(number|int|long|float|decimal)\b)""",
         titulo='Coluna de CNPJ com tipo numérico no banco',
         porque='Coluna numérica não aceita letra. O INSERT de um CNPJ alfanumérico falha, '
@@ -108,7 +110,8 @@ REGRAS = [
     ),
     dict(
         id='SCHEMA_ANTIGO', sev=2,
-        padrao=r"""(PL_010c|PL_009|TCnpj|TChNFe|leiaute[_-]?4\.00)""",
+        padrao=r"""(\bPL_00\d|\bPL_010[abc]\b|\bPL_010_V\d"""
+               r"""|(simpleType|complexType)\s+name\s*=\s*["\'](TCnpj|TCnpjVar|TChNFe)["\'])""",
         titulo='Referência a pacote de schema anterior ao CNPJ alfanumérico',
         porque='Os schemas XML mudaram: TCnpj e TCnpjVar passaram a [0-9A-Z]{12}[0-9]{2} e a '
                'chave a [0-9]{6}[0-9A-Z]{12}[0-9]{26}. Validar contra o XSD antigo faz o XML '
@@ -126,6 +129,7 @@ REGRAS = [
     dict(
         id='VAL_VB_CLIPPER', sev=3,
         padrao=r"""\b(Val|CLng|CInt|CDbl|CCur|CDec|Str2Num|VAL)\s*\(""",
+        exige_token_na_linha=True,
         titulo='Conversao numerica de CNPJ em Visual Basic ou Clipper',
         porque='Val(), CLng() e equivalentes param no primeiro caractere que nao e digito. '
                'Val("00000000E08G12") devolve 0 em vez de erro — o sistema segue rodando com '
@@ -194,6 +198,13 @@ IGNORAR_PASTAS = {
     'node_modules', 'vendor', '.git', '.svn', 'dist', 'build', 'bin', 'obj',
     '__pycache__', '.venv', 'venv', 'packages', 'bower_components', '.next',
     'coverage', 'tmp', 'temp', '.idea', '.vscode',
+}
+
+# Pastas de teste: o que importa no diagnostico e o codigo de producao.
+# Use --incluir-testes para varrer estas tambem.
+PASTAS_TESTE = {
+    'test', 'tests', '__tests__', 'spec', 'specs', 'fixtures', 'fixture',
+    'mocks', '__mocks__', 'testdata', 'samples', 'sample', 'exemplos',
 }
 
 TOKENS_CNPJ = ('cnpj', 'cgc', 'c_n_p_j', 'nrcnpj', 'numcnpj', 'cnpjcpf', 'cpfcnpj',
