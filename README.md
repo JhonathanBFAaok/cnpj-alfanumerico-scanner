@@ -24,7 +24,7 @@ A mudança pegou mais coisa do que o cadastro:
   `[0-9A-Z]{8}` (DRN "CNPJ Alfanumérico" do SPI/RSFN e Informe STR 31/2025).
 - **Obrigações acessórias.** eSocial, EFD-Reinf, ECD, ECF, e-Financeira, padrão TISS
   da ANS e NFS-e Nacional também foram adequados ao formato novo. No eSocial a mudança veio por
-  republicação de XSD, sem nota técnica numerada; na EFD-Reinf os novos XSD
+  republicação de XSD, e nenhuma nota técnica traz o assunto no título; na EFD-Reinf os novos XSD
   substituíram os antigos **mantendo o mesmo número de versão**. Quem monitora nota
   técnica ou número de versão não viu nada mudar.
 
