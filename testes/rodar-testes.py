@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Roda todos os testes do projeto. Use depois de mexer nas regras."""
-import os, sys, subprocess, tempfile, shutil
+import os, sys, subprocess, tempfile, shutil, io
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 falhas = []
@@ -53,6 +53,40 @@ r = subprocess.run([sys.executable, os.path.join(RAIZ, 'testes', 'checar-textos.
                    capture_output=True, text=True)
 passo('portugues correto no que o cliente le', r.returncode == 0,
       (r.stdout.strip().splitlines() or [''])[0].strip())
+
+print('\n5) CNPJ oficial de teste publicado pela SVRS (PC3D315K000193)')
+sys.path.insert(0, RAIZ)
+import cnpj as referencia
+passo('Python valida o CNPJ oficial e rejeita DV trocado',
+      referencia.validar('PC3D315K000193') and not referencia.validar('PC3D315K000194'))
+if shutil.which('node'):
+    js = ("const {createRequire}=require('module');"
+          "const c=createRequire(process.cwd()+'/')('./correcao/cnpj.js');"
+          "console.log(c.validar('PC3D315K000193') && !c.validar('PC3D315K000194') ? 'SIM' : 'NAO');")
+    r = subprocess.run(['node', '-e', js], capture_output=True, text=True, cwd=RAIZ)
+    passo('JavaScript (kit ES5) valida o CNPJ oficial', r.stdout.strip() == 'SIM', r.stderr.strip()[:80])
+
+print('\n6) ISPB alfanumerico (Banco Central)')
+fonte = tempfile.mkdtemp()
+saida = tempfile.mkdtemp()
+try:
+    with io.open(os.path.join(fonte, 'pix.js'), 'w', encoding='utf-8') as f:
+        f.write('function validaIspb(ispb) {\n  return /^\\d{8}$/.test(ispb);\n}\n\n\n\n\n'
+                'const codigo = parseInt(ispb, 10);\n\n\n\n\n'
+                'function validaIspbNovo(ispb) {\n  return /^[0-9A-Z]{8}$/.test(ispb);\n}\n\n\n\n\n'
+                'const cep = /^\\d{8}$/;\n')
+    j = os.path.join(saida, 'a.json')
+    subprocess.run([sys.executable, os.path.join(RAIZ, 'scan.py'), fonte,
+                    '-o', os.path.join(saida, 'r.html'), '--json', j], capture_output=True, text=True)
+    import json
+    with io.open(j, encoding='utf-8') as f:
+        dados = json.load(f)
+    linhas = sorted(a['linha'] for a in dados if a['regra_id'] == 'ISPB_NUMERICO')
+    passo('acusa \\d{8} e parseInt no ISPB, ignora o ja adaptado e o CEP', linhas == [2, 8],
+          'linhas %s' % linhas)
+finally:
+    shutil.rmtree(fonte, ignore_errors=True)
+    shutil.rmtree(saida, ignore_errors=True)
 
 print('\n' + ('TUDO PASSOU' if not falhas else 'FALHARAM: ' + ', '.join(falhas)) + '\n')
 sys.exit(1 if falhas else 0)

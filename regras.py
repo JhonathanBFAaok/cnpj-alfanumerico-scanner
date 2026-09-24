@@ -147,7 +147,7 @@ REGRAS = [
         correcao='Comparar como texto dos dois lados e criar índice sobre a coluna de texto.',
     ),
     dict(
-        id='SCHEMA_CONTRATO', sev=3,
+        id='SCHEMA_CONTRATO', sev=3, exige_nome_cnpj=True,
         padrao=r"""("type"\s*:\s*"(integer|number)"|xs:(integer|long|int|decimal)"""
                r"""|type\s*=\s*["\']xs:(integer|long|int|decimal)["\']"""
                r"""|maxLength\s*value\s*=\s*["\']1[0-3]["\'])""",
@@ -173,6 +173,19 @@ REGRAS = [
         porque='Se a coluna guardava o CNPJ sem formatação em menos de 14 posições, o valor será truncado.',
         correcao='Ajustar para CHAR(14) sem formatação, ou VARCHAR(18) se guardar formatado.',
         contexto_sql=True,
+    ),
+    dict(
+        id='ISPB_NUMERICO', sev=2, so_ispb=True,
+        padrao=r"""(\\d\{8\}|\[0-9\]\{8\}|\b(parseInt|intval|int|long|Int32\.Parse|Int64\.Parse|"""
+               r"""Convert\.To(Int32|Int64)|Integer\.parseInt|Long\.parseLong|StrToInt64|StrToInt|to_i)\s*\("""
+               r"""|\bispb\w*\s+(BIGINT|NUMERIC|DECIMAL|INTEGER|INT)\b"""
+               r"""|\b(int|long|Int32|Int64|Integer|Long)\s+\w*ispb\w*\b)""",
+        titulo='ISPB tratado como 8 dígitos numéricos',
+        porque='O Banco Central definiu que o ISPB também passa a ser alfanumérico, no formato '
+               '[0-9A-Z]{8}, junto com o CNPJ (DRN "CNPJ Alfanumérico" do SPI e da RSFN, e Informe '
+               'STR 31/2025). Quem valida ou converte o ISPB como número quebra em Pix, STR e '
+               'integrações bancárias por um motivo diferente do CNPJ.',
+        correcao='Tratar o ISPB como texto de 8 posições e validar com [0-9A-Z]{8}.',
     ),
 ]
 

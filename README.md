@@ -1,13 +1,35 @@
-# Scanner de compatibilidade — CNPJ alfanumérico
+# Scanner de compatibilidade — CNPJ alfanumérico e chave de acesso
 
 Ferramenta que varre o código de um sistema e aponta onde ele vai quebrar com o
-CNPJ alfanumérico da Receita Federal.
+CNPJ alfanumérico da Receita Federal — no campo do CNPJ, na chave de acesso dos
+documentos fiscais e no ISPB do sistema financeiro.
 
 **Contexto:** a Receita começou a emitir CNPJ com letras. O primeiro saiu em
 **31/07/2026** — `00.000.000/E08G-12`, uma filial do Banco do Brasil. Quase todo
 sistema brasileiro foi escrito assumindo que CNPJ só tem número, e a própria
 Receita avisa que a falta de adaptação gera "falhas em integrações e rejeições
 em processos". Base normativa: **IN RFB nº 2.229**.
+
+---
+
+## Não é só o campo do CNPJ
+
+A mudança pegou mais coisa do que o cadastro:
+
+- **Chave de acesso de 44 posições.** A Nota Técnica Conjunta 2025.001 mudou a
+  chave para `[0-9]{6}[A-Z0-9]{12}[0-9]{26}` em NF-e, NFC-e, CT-e, CT-e OS, GTV-e,
+  MDF-e, BP-e, BP-e TM, NF3e e NFCom, porque ela carrega o CNPJ do emitente no meio.
+  Quem valida a chave com `\d{44}` ou guarda como número rejeita documento legítimo.
+- **ISPB.** O Banco Central definiu que o ISPB também passa a ser alfanumérico,
+  `[0-9A-Z]{8}` (DRN "CNPJ Alfanumérico" do SPI/RSFN e Informe STR 31/2025).
+- **Obrigações acessórias.** eSocial, EFD-Reinf, ECD, ECF, e-Financeira, padrão TISS
+  da ANS e NFS-e Nacional também foram adequados ao formato novo. No eSocial a mudança veio por
+  republicação de XSD, sem nota técnica numerada; na EFD-Reinf os novos XSD
+  substituíram os antigos **mantendo o mesmo número de versão**. Quem monitora nota
+  técnica ou número de versão não viu nada mudar.
+
+Para testar em homologação, a SVRS publicou um CNPJ alfanumérico oficial:
+`PC3D315K000193`. Ele está nos testes deste projeto.
 
 ---
 
@@ -68,6 +90,7 @@ conferir isso com um Ctrl+F antes de rodar.
 | MÉDIO | Ordenação de CNPJ como número |
 | MÉDIO | Código de barras CODE-128C no DANFE |
 | MÉDIO | Coluna menor que 14 caracteres |
+| ALTO | ISPB validado ou convertido como 8 dígitos numéricos (Pix, STR, CNAB) |
 
 Linguagens e formatos cobertos: PHP, JavaScript, TypeScript, Vue, Python, C#,
 VB.NET, **Visual Basic 6** (`.bas`, `.frm`, `.cls`), **Clipper/Harbour** (`.prg`),
@@ -201,6 +224,22 @@ Desempenho: 2 a 3 segundos em projetos reais de 1.000 a 2.700 arquivos; menos de
 - A Receita **não publicou data de corte** para obrigatoriedade geral. O que
   existe hoje é a emissão gradual desde 31/07/2026. Não venda com prazo que a
   Receita não deu.
+
+---
+
+## Achou mais do que dá pra corrigir agora?
+
+O scanner é gratuito e continua gratuito. Se o relatório apontar mais pontos do
+que o seu time consegue absorver agora, eu faço a correção com vocês:
+
+- **Laudo priorizado** — o que quebra primeiro, o que corrompe dado em silêncio,
+  e a ordem de correção, com estimativa de esforço.
+- **Correção dos pontos** — no código de vocês, na linguagem de vocês, incluindo
+  legado (Delphi, VB6, Clipper, ASP clássico, PHP antigo).
+- **Teste com o CNPJ oficial de homologação** antes de ir para produção.
+
+Contato: **jhonathan.profss@gmail.com** — manda o relatório (ou só o número de
+pontos) e eu respondo com o que faria e quanto custa.
 
 ---
 

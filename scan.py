@@ -55,6 +55,10 @@ for r in REGRAS:
     r['_re'] = re.compile(r['padrao'], re.IGNORECASE)
 
 _re_token = re.compile('|'.join(TOKENS_CNPJ), re.IGNORECASE)
+_re_ispb = re.compile(r'ispb', re.IGNORECASE)   # o ISPB tambem virou alfanumerico (BCB)
+# nome da propriedade/elemento de schema: "campo": {   |   name="campo"
+_re_nome_schema = re.compile(r'"([^"]+)"\s*:\s*\{|\bname\s*=\s*["\']([^"\']+)["\']', re.IGNORECASE)
+LOOKBACK_SCHEMA = 4
 
 # Declaracao de funcao/metodo cujo nome menciona CNPJ ou chave: tudo no corpo
 # dela e contexto de CNPJ, mesmo que a variavel la dentro se chame "limpo".
@@ -66,6 +70,18 @@ _re_funcao_cnpj = re.compile(
 
 def menciona_cnpj(linha):
     return bool(_re_token.search(linha))
+
+
+def nome_schema_e_cnpj(linhas, i, linha):
+    """Num schema, o tipo numerico so importa se a propriedade for o CNPJ.
+    Olha a propria linha e, se preciso, a propriedade declarada logo acima."""
+    if menciona_cnpj(linha):
+        return True
+    for j in range(i - 1, max(-1, i - 1 - LOOKBACK_SCHEMA), -1):
+        m = _re_nome_schema.search(linhas[j])
+        if m:
+            return menciona_cnpj(m.group(1) or m.group(2) or '')
+    return False
 
 
 def ler(caminho):
@@ -90,7 +106,8 @@ def varrer_arquivo(caminho, linguagem):
     adaptado = bool(RE_ADAPTADO.search(texto))
     # indices de linhas que falam de CNPJ
     ancoras = {i for i, l in enumerate(linhas) if menciona_cnpj(l)}
-    if not ancoras:
+    ancoras_ispb = {i for i, l in enumerate(linhas) if _re_ispb.search(l)}
+    if not ancoras and not ancoras_ispb:
         return []
     perto = set()
     for i in ancoras:
@@ -103,7 +120,7 @@ def varrer_arquivo(caminho, linguagem):
     achados = []
     vistos = {}          # regra_id -> quantas vezes ja registrei neste arquivo
     suprimidos = {}      # regra_id -> quantas deixei de registrar
-    for i in sorted(perto):
+    for i in sorted(perto | ancoras_ispb):
         linha = linhas[i]
         if len(linha) > 600:
             continue
@@ -120,6 +137,11 @@ def varrer_arquivo(caminho, linguagem):
         else:
             linha_match = linha
         for regra in REGRAS:
+            if regra.get('so_ispb'):
+                if not _re_ispb.search(linha_match):
+                    continue
+            elif i not in perto:
+                continue                  # linha so entrou por causa do ISPB
             if adaptado and regra['id'] in REGRAS_SO_LEGADO:
                 continue
             if regra.get('contexto_sql') and linguagem != 'SQL' and not menciona_cnpj(linha):
@@ -128,6 +150,8 @@ def varrer_arquivo(caminho, linguagem):
             # propria linha: int() de valor, data ou contagem nao e conversao de CNPJ
             if regra.get('exige_token_na_linha') and not menciona_cnpj(linha_match):
                 continue
+            if regra.get('exige_nome_cnpj') and not nome_schema_e_cnpj(linhas, i, linha_match):
+                continue                  # tipo numerico, mas de outro campo do schema
             if regra['_re'].search(linha_match):
                 n = vistos.get(regra['id'], 0)
                 if n >= MAX_POR_ARQUIVO_REGRA:
@@ -262,7 +286,9 @@ def gerar_html(achados, raiz, arquivos, destino, cliente=None):
 
     p.append('<footer>An&aacute;lise est&aacute;tica local &mdash; nenhum c&oacute;digo foi enviado para fora desta m&aacute;quina.<br>'
              'Base: Instru&ccedil;&atilde;o Normativa RFB n&ordm; 2.229. Primeiro CNPJ alfanum&eacute;rico emitido em 31/07/2026.<br>'
-             'O resultado indica pontos prov&aacute;veis de quebra e n&atilde;o substitui revis&atilde;o t&eacute;cnica.</footer>')
+             'O resultado indica pontos prov&aacute;veis de quebra e n&atilde;o substitui revis&atilde;o t&eacute;cnica.<br>'
+             'Precisa de ajuda para corrigir? jhonathan.profss@gmail.com &mdash; '
+             'github.com/JhonathanBFAaok/cnpj-alfanumerico-scanner</footer>')
     p.append('</div></body></html>')
 
     conteudo = '\n'.join(p)
